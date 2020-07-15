@@ -2570,7 +2570,7 @@ class RegressionResults(base.LikelihoodModelResults):
             self, exog=exog, transform=transform, weights=weights,
             row_labels=row_labels, **kwargs)
 
-    def summary(self, yname=None, xname=None, title=None, alpha=.05):
+    def summary(self, yname=None, xname=None, title=None, alpha=.05, slim=False):
         """
         Summarize the Regression Results.
 
@@ -2621,43 +2621,51 @@ class RegressionResults(base.LikelihoodModelResults):
         # TODO: default do not work if it's not identically spelled
 
         top_left = [('Dep. Variable:', None),
-                    ('Model:', None),
-                    ('Method:', ['Least Squares']),
-                    ('Date:', None),
-                    ('Time:', None),
-                    ('No. Observations:', None),
-                    ('Df Residuals:', None),
-                    ('Df Model:', None),
-                    ]
+                ('Model:', None),
+                ('Method:', ['Least Squares']),
+                ('Date:', None),
+                ('Time:', None),
+                ('No. Observations:', None),
+                ('Df Residuals:', None),
+                ('Df Model:', None),
+                ]
 
         if hasattr(self, 'cov_type'):
             top_left.append(('Covariance Type:', [self.cov_type]))
 
         rsquared_type = '' if self.k_constant else ' (uncentered)'
         top_right = [('R-squared' + rsquared_type + ':',
-                      ["%#8.3f" % self.rsquared]),
-                     ('Adj. R-squared' + rsquared_type + ':',
-                      ["%#8.3f" % self.rsquared_adj]),
-                     ('F-statistic:', ["%#8.4g" % self.fvalue]),
-                     ('Prob (F-statistic):', ["%#6.3g" % self.f_pvalue]),
-                     ('Log-Likelihood:', None),
-                     ('AIC:', ["%#8.4g" % self.aic]),
-                     ('BIC:', ["%#8.4g" % self.bic])
-                     ]
+                    ["%#8.3f" % self.rsquared]),
+                    ('Adj. R-squared' + rsquared_type + ':',
+                    ["%#8.3f" % self.rsquared_adj]),
+                    ('F-statistic:', ["%#8.4g" % self.fvalue]),
+                    ('Prob (F-statistic):', ["%#6.3g" % self.f_pvalue]),
+                    ('Log-Likelihood:', None),
+                    ('AIC:', ["%#8.4g" % self.aic]),
+                    ('BIC:', ["%#8.4g" % self.bic])
+                    ]
 
-        diagn_left = [('Omnibus:', ["%#6.3f" % omni]),
-                      ('Prob(Omnibus):', ["%#6.3f" % omnipv]),
-                      ('Skew:', ["%#6.3f" % skew]),
-                      ('Kurtosis:', ["%#6.3f" % kurtosis])
-                      ]
+        if slim:
+            slimlist=['Dep. Variable:','Model:','No. Observations:','Covariance Type:','R-squared:','Adj. R-squared:','F-statistic:','Prob (F-statistic):']
+            diagn_left=[]
+            diagn_right=[]
+            top_left=[elem for elem in top_left if elem[0] in slimlist]
+            top_right=[elem for elem in top_right if elem[0] in slimlist]
+        else:
+            diagn_left = [('Omnibus:', ["%#6.3f" % omni]),
+                        ('Prob(Omnibus):', ["%#6.3f" % omnipv]),
+                        ('Skew:', ["%#6.3f" % skew]),
+                        ('Kurtosis:', ["%#6.3f" % kurtosis])
+                        ]
 
-        diagn_right = [('Durbin-Watson:',
-                        ["%#8.3f" % durbin_watson(self.wresid)]
-                        ),
-                       ('Jarque-Bera (JB):', ["%#8.3f" % jb]),
-                       ('Prob(JB):', ["%#8.3g" % jbpv]),
-                       ('Cond. No.', ["%#8.3g" % condno])
-                       ]
+            diagn_right = [('Durbin-Watson:',
+                            ["%#8.3f" % durbin_watson(self.wresid)]
+                            ),
+                        ('Jarque-Bera (JB):', ["%#8.3f" % jb]),
+                        ('Prob(JB):', ["%#8.3g" % jbpv]),
+                        ('Cond. No.', ["%#8.3g" % condno])
+                        ]
+            
 
         if title is None:
             title = self.model.__class__.__name__ + ' ' + "Regression Results"
@@ -2666,13 +2674,13 @@ class RegressionResults(base.LikelihoodModelResults):
         from statsmodels.iolib.summary import Summary
         smry = Summary()
         smry.add_table_2cols(self, gleft=top_left, gright=top_right,
-                             yname=yname, xname=xname, title=title)
+                            yname=yname, xname=xname, title=title)
         smry.add_table_params(self, yname=yname, xname=xname, alpha=alpha,
-                              use_t=self.use_t)
-
-        smry.add_table_2cols(self, gleft=diagn_left, gright=diagn_right,
-                             yname=yname, xname=xname,
-                             title="")
+                            use_t=self.use_t)
+        if not slim:
+            smry.add_table_2cols(self, gleft=diagn_left, gright=diagn_right,
+                                yname=yname, xname=xname,
+                                title="")
 
         # add warnings/notes, added to text format only
         etext = []
@@ -2703,7 +2711,7 @@ class RegressionResults(base.LikelihoodModelResults):
 
         if etext:
             etext = ["[{0}] {1}".format(i + 1, text)
-                     for i, text in enumerate(etext)]
+                    for i, text in enumerate(etext)]
             etext.insert(0, "Notes:")
             smry.add_extra_txt(etext)
 
